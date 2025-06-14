@@ -1,23 +1,26 @@
-site_name: Favicon Generator
-docs_dir: docs
-site_dir: site
+site_name: Favicon Generator CLI
+site_description: Generate favicons, webmanifest and metadata from an image via CLI
+site_author: Juan Velazquez
+repo_url: https://github.com/jjvgarcia/favicon-generator-cli
 
 theme:
   name: material
-  features:
-    - navigation.tabs
-    - navigation.indexes
-    - navigation.tabs.sticky
-    - navigation.sections
-    - toc.integrate
-  palette:
-    - scheme: default
-      toggle:
-        icon: material/weather-sunny
-        name: Mudar para tema escuro
-      primary: indigo
-      accent: indigo
-    - scheme: slate
+  logo: images/logo.png
+  favicon: images/logo.png
+
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - API: api.md
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
       toggle:
         icon: material/weather-night
         name: Mudar para tema claro
