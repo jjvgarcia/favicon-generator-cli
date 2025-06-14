@@ -1,0 +1,191 @@
+from pathlib import Path
+from PIL import Image
+import os
+import typer
+from rich import print
+import io
+import cairosvg
+import json
+import subprocess
+from typing import Optional, List, Tuple
+
+app = typer.Typer()
+
+sizes = [
+    (16, "favicon-16x16.png"),
+    (32, "favicon-32x32.png"),
+    (48, "favicon-48x48.png"),
+    (96, "favicon-96x96.png"),
+    (180, "apple-touch-icon.png"),
+    (192, "android-chrome-192x192.png"),
+    (512, "android-chrome-512x512.png"),
+]
+
+def load_image(image_path: Path) -> Image.Image:
+    """Carrega imagem de entrada, suporta SVG e bitmap (PNG, JPG, etc)"""
+    if image_path.suffix.lower() == ".svg":
+        print("[yellow]Convertendo SVG para PNG temporário...[/yellow]")
+        png_data = cairosvg.svg2png(url=str(image_path))
+        img = Image.open(io.BytesIO(png_data)).convert("RGBA")
+    else:
+        img = Image.open(image_path).convert("RGBA")
+    return img
+
+def generate_metadata(output_dir: str = "favicons") -> str:
+    """Generate HTML metadata for favicons."""
+    html = f"""
+<link rel="apple-touch-icon" sizes="180x180" href="/{output_dir}/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/{output_dir}/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/{output_dir}/favicon-16x16.png">
+<link rel="icon" href="/{output_dir}/favicon.ico" type="image/x-icon">
+<meta name="msapplication-TileColor" content="#ffffff">
+<meta name="theme-color" content="#ffffff">
+"""
+    return html.strip()
+
+def generate_manifest(output_dir: str, name: str = "App", short_name: Optional[str] = None) -> None:
+    """Generate a web app manifest file."""
+    if short_name is None:
+        short_name = name
+        
+    manifest = {
+        "name": name,
+        "short_name": short_name,
+        "icons": [
+            {
+                "src": f"/{output_dir}/android-chrome-192x192.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": f"/{output_dir}/android-chrome-512x512.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ],
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#ffffff"
+    }
+
+    manifest_path = Path(output_dir) / "site.webmanifest"
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2)
+
+    print(f"[cyan]Manifesto gerado em:[/cyan] {manifest_path}")
+
+def optimize_with_squoosh(output_dir: str) -> None:
+    """Optimize PNG files using Squoosh CLI."""
+    try:
+        print("[yellow]Otimizando imagens com Squoosh...[/yellow]")
+        png_files = list(Path(output_dir).glob("*.png"))
+        for file in png_files:
+            subprocess.run([
+                "squoosh-cli",
+                "--oxipng", "4",  # nível de otimização
+                str(file)
+            ], check=True)
+        print("[green]✔️ Otimização concluída[/green]")
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"[yellow]⚠️ Aviso: Não foi possível otimizar com Squoosh: {e}[/yellow]")
+
+def generate_image_variants(
+    img: Image.Image, 
+    output_path: Path, 
+    webp: bool = False, 
+    avif: bool = False
+) -> None:
+    """Generate WebP and AVIF variants of an image."""
+    if webp:
+        webp_path = output_path.with_suffix(".webp")
+        img.save(webp_path, "WEBP")
+        print(f"[cyan]Gerado:[/cyan] {webp_path}")
+
+    if avif:
+        avif_path = output_path.with_suffix(".avif")
+        try:
+            img.save(avif_path, "AVIF")
+            print(f"[cyan]Gerado:[/cyan] {avif_path}")
+        except Exception as e:
+            print(f"[yellow]⚠️ Não foi possível gerar AVIF: {e}[/yellow]")
+
+@app.command()
+def generate(
+    image_path: str = typer.Argument(..., help="Caminho da imagem base (PNG, SVG, etc)"),
+    output_dir: str = typer.Option("favicons", help="Pasta de saída"),
+    manifest: bool = typer.Option(True, help="Gerar site.webmanifest"),
+    optimize: bool = typer.Option(False, help="Otimizar PNGs com Squoosh (requer Node.js e squoosh-cli)"),
+    webp: bool = typer.Option(False, help="Gerar variantes em WebP"),
+    avif: bool = typer.Option(False, help="Gerar variantes em AVIF"),
+    app_name: str = typer.Option("App", help="Nome do aplicativo para o manifesto"),
+    app_short_name: str = typer.Option(None, help="Nome curto do aplicativo (opcional)")
+):
+    """
+    Gera favicons e arquivos relacionados a partir de uma imagem de entrada.
+    """
+    image_file = Path(image_path)
+
+    if not image_file.exists():
+        print(f"[red]Arquivo não encontrado:[/red] {image_file}")
+        raise typer.Exit(1)
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(f"[bold green]✔️ Gerando favicons na pasta '{output_dir}'[/bold green]")
+
+    if webp:
+        print("[yellow]⚠️ Gerando variantes WebP...[/yellow]")
+    if avif:
+        print("[yellow]⚠️ Gerando variantes AVIF...[/yellow]")
+    if optimize:
+        print("[yellow]⚠️ A otimização com Squoosh será executada...[/yellow]")
+
+    img = load_image(image_file)
+    icons_for_ico = []
+
+    # Gerar todas as variações de tamanho
+    for size, filename in sizes:
+        resized = img.resize((size, size), Image.LANCZOS)
+        output_path = Path(output_dir) / filename
+        
+        # Salvar PNG original
+        resized.save(output_path, format="PNG")
+        print(f"[cyan]Gerado:[/cyan] {output_path}")
+        
+        # Gerar variantes (WebP/AVIF) se solicitado
+        if webp or avif:
+            generate_image_variants(resized, output_path, webp, avif)
+        
+        if size in [16, 32, 48]:
+            icons_for_ico.append(resized)
+
+    # Gerar favicon.ico
+    ico_path = Path(output_dir) / "favicon.ico"
+    icons_for_ico[0].save(
+        ico_path,
+        format="ICO",
+        sizes=[(16,16), (32,32), (48,48)]
+    )
+    print(f"[cyan]Gerado:[/cyan] {ico_path}")
+
+    # Gerar metadata HTML
+    metadata = generate_metadata(output_dir)
+    metadata_path = Path(output_dir) / "metadata.html"
+    with open(metadata_path, "w") as f:
+        f.write(metadata)
+    print(f"[cyan]Metadata gerada em:[/cyan] {metadata_path}")
+
+    # Gerar manifest se solicitado
+    if manifest:
+        generate_manifest(output_dir, app_name, app_short_name)
+    
+    # Otimizar imagens se solicitado
+    if optimize:
+        optimize_with_squoosh(output_dir)
+
+    print(f"\n[bold green]✅ Processo concluído![/bold green]")
+
+
+if __name__ == "__main__":
+    app()

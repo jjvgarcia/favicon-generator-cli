@@ -1,0 +1,77 @@
+site_name: Favicon Generator
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.tabs.sticky
+    - navigation.sections
+    - toc.integrate
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/weather-sunny
+        name: Mudar para tema escuro
+      primary: indigo
+      accent: indigo
+    - scheme: slate
+      toggle:
+        icon: material/weather-night
+        name: Mudar para tema claro
+      primary: indigo
+      accent: indigo
+
+  favicon: favicon.ico
+  logo: assets/logo.png
+
+repo_url: https://github.com/seu-usuario/favicon-generator
+repo_name: GitHub
+
+edit_uri: edit/main/docs/
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_root_heading: true
+            show_source: true
+            show_bases: true
+            show_signature_annotations: true
+
+nav:
+  - Início: index.md
+  - Guia de Uso:
+      - Instalação: guias/instalacao.md
+      - Primeiros Passos: guias/primeiros-passos.md
+      - Opções da CLI: guias/opcoes-cli.md
+  - Referência da API:
+      - Módulo favicon_generator: referencia/modulo.md
+  - Desenvolvimento:
+      - Configuração: desenvolvimento/configuracao.md
+      - Testes: desenvolvimento/testes.md
+      - Publicação: desenvolvimento/publicacao.md

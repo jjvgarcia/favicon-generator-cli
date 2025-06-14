@@ -1,0 +1,38 @@
+/* Estilos personalizados para a documentação */
+:root {
+  --md-primary-fg-color: #5c6bc0;
+  --md-primary-fg-color--light: #8e99f3;
+  --md-primary-fg-color--dark: #26418f;
+  --md-accent-fg-color: #3949ab;
+}
+
+.md-header__button.md-logo img {
+  height: 48px;
+  width: auto;
+}
+
+/* Melhorias na legibilidade do código */
+.codehilite {
+  border-radius: 0.2rem;
+  margin: 1.5em 0;
+}
+
+/* Estilo para blocos de aviso/dica */
+.admonition {
+  border-radius: 0.2rem;
+  margin: 1.5em 0;
+  padding: 0 0.6rem;
+}
+
+/* Melhorias na navegação */
+.md-nav__link {
+  padding: 0.4rem 0.8rem;
+}
+
+/* Ajustes para telas pequenas */
+@media screen and (max-width: 76.1875em) {
+  .md-nav--primary .md-nav__title {
+    background-color: var(--md-primary-fg-color);
+    color: white;
+  }
+}
